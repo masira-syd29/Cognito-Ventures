@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Startup Analyst</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <style>
+        body { padding: 2rem; }
+        .hidden { display: none; }
+        .card { margin-top: 1.5rem; }
+        .card-header { font-weight: bold; font-size: 1.2rem; }
+        .card-body ul { margin-bottom: 0; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>🤖 AI Startup Analyst</h1>
+            <p>Upload a pitch deck and website to get an instant investment memo.</p>
+        </header>
+
+        <form id="analysis-form">
+            <label for="pitch_deck">Pitch Deck (PDF)</label>
+            <input type="file" id="pitch_deck" name="pitch_deck" accept=".pdf" required>
+            
+            <label for="website_url">Website URL (Optional)</label>
+            <input type="text" id="website_url" name="website_url" placeholder="e.g., www.example.com">
+
+            <button type="submit">Analyze</button>
+        </form>
+
+        <div id="loading" class="hidden">
+            <p aria-busy="true">Analyzing, please wait...</p>
+        </div>
+
+        <div id="results" class="hidden"></div>
+
+    </main>
+
+    <script>
+        const form = document.getElementById('analysis-form');
+        const loadingDiv = document.getElementById('loading');
+        const resultsDiv = document.getElementById('results');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Stop normal form submission
+            
+            // Show loading, hide old results
+            loadingDiv.classList.remove('hidden');
+            resultsDiv.classList.add('hidden');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayResults(data);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<article><p><strong>Error:</strong> ${error.message}</p></article>`;
+            } finally {
+                // Hide loading, show results
+                loadingDiv.classList.add('hidden');
+                resultsDiv.classList.remove('hidden');
+            }
+        });
+
+        function displayResults(data) {
+            // Create and append the HTML for the results
+            resultsDiv.innerHTML = `
+                <h2>Analysis Complete</h2>
+                <article class="card">
+                    <div class="card-body"><strong>Summary:</strong> ${data.company_summary}</div>
+                </article>
+                <article class="card">
+                    <div class="card-body"><strong>Verdict:</strong> ${data.verdict}</div>
+                </article>
+                <article class="card">
+                    <div class="card-body"><strong>Justification:</strong> ${data.justification}</div>
+                </article>
+                
+                <div class="grid">
+                    <article class="card">
+                        <div class="card-header">Strengths 💪</div>
+                        <div class="card-body">
+                            <ul>${data.strengths.map(item => `<li>${item}</li>`).join('')}</ul>
+                        </div>
+                    </article>
+                    <article class="card">
+                        <div class="card-header">Weaknesses 🚩</div>
+                        <div class="card-body">
+                            <ul>${data.weaknesses.map(item => `<li>${item}</li>`).join('')}</ul>
+                        </div>
+                    </article>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

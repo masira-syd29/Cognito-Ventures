@@ -1,5 +1,3 @@
-#AIzaSyDNtix-DFwN1pLDuxfP3wQnraga1eiO9l0
-# In analyst.py
 import os
 import pymupdf  # PyMuPDF
 import requests
@@ -9,8 +7,9 @@ import json
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 
-# load_dotenv() # Create a .env file and put GOOGLE_API_KEY="your_key_here"
-# app = Flask(__name__)
+load_dotenv() # Create a .env file and put GOOGLE_API_KEY="your_key_here"
+api_key = os.getenv("GOOGLE_API_KEY")
+app = Flask(__name__)
 
 SYSTEM_PROMPT = """
 You are "VentureGPT", an expert AI analyst for a top-tier venture capital firm.
@@ -32,6 +31,7 @@ Pitch Deck Text: "{pitch_deck_text}"
 Website Content: "{website_text}"
 ---
 """
+
 
 # --- 1. Data Extraction Functions ---
 def extract_text_from_pdf(pdf_file):
@@ -71,9 +71,31 @@ def get_startup_analysis(pitch_deck_text, website_text):
         print(f"Error calling Gemini API: {e}")
         return {"error": "Failed to get analysis from AI."}
 
+# --- Flask Routes ---
+@app.route('/')
+def index():
+    return render_template('index.html')
 
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    # 1. Get data from the form
+    pitch_deck = request.files.get('pitch_deck')
+    website_url = request.form.get('website_url')
 
+    if not pitch_deck:
+        return jsonify({"error": "No pitch deck provided."}), 400
+
+    # 2. Extract text
+    deck_text = extract_text_from_pdf(pitch_deck)
+    web_text = scrape_text_from_url(website_url) if website_url else "No website provided."
     
+    # 3. Get AI analysis
+    analysis_json = get_startup_analysis(deck_text, web_text)
+    
+    # 4. Return JSON to the frontend
+    return jsonify(analysis_json)
+    
+
 
 # --- 3. Main Execution ---
 if __name__ == "__main__":
