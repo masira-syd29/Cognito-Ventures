@@ -6,8 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
 import json
-from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify
+
 
 # load_dotenv() # Create a .env file and put GOOGLE_API_KEY="your_key_here"
 # app = Flask(__name__)

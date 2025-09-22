@@ -77,6 +77,15 @@
         });
 
         function displayResults(data) {
+            // New logic to handle combined verdict and justification
+            let verdictText = data.verdict;
+            let justificationText = data.justification;
+
+            if (!justificationText && verdictText && verdictText.includes(' - ')) {
+                const parts = verdictText.split(' - ');
+                verdictText = parts[0].trim();
+                justificationText = parts.slice(1).join(' - ').trim();
+            }
             // Create and append the HTML for the results
             resultsDiv.innerHTML = `
                 <h2>Analysis Complete</h2>
