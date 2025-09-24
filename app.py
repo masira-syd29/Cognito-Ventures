@@ -1,20 +1,23 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
+from tasks import analyze_startup_task # Import the task
 
-# Import the functions from your separate analyst.py file
-from analyst import extract_text_from_pdf, scrape_text_from_url, get_startup_analysis
+
+# # Import the functions from your separate analyst.py file
+# from analyst import extract_text_from_pdf, scrape_text_from_url, get_startup_analysis
 
 load_dotenv() # Create a .env file and put GOOGLE_API_KEY="your_key_here"
-api_key = os.getenv("GOOGLE_API_KEY")
+# api_key = os.getenv('GOOGLE_API_KEY')
 app = Flask(__name__)
 
 SYSTEM_PROMPT = """
 You are "VentureGPT", an expert AI analyst for a top-tier venture capital firm.
 Your task is to analyze a startup based on its pitch deck text and website content.
-You must return your analysis in a structured JSON object.
+Your ONLY output must be a single, valid JSON object.
+Do not include any text, explanations, or markdown formatting before or after the JSON object.
 
-The JSON object must have the following keys:
+Analyze the provided startup content and generate a JSON object with the following keys:
 - "company_summary": A brief, 2-sentence overview of what the company does.
 - "strengths": An array of 3-4 strings, each highlighting a key strength.
 - "weaknesses": An array of 3-4 strings, each identifying a key risk or weakness.
@@ -44,19 +47,52 @@ def analyze():
     if not pitch_deck:
         return jsonify({"error": "No pitch deck provided."}), 400
 
-    try:
-        # 2. Extract text
-        deck_text = extract_text_from_pdf(pitch_deck)
-        web_text = scrape_text_from_url(website_url) if website_url else "No website provided."
-    except Exception as e:
-        return jsonify({"error": f"Error processing file: {e}"}), 500
-    # 3. Get AI analysis
-    analysis_json = get_startup_analysis(deck_text, web_text)
-    
-    # 4. Return JSON to the frontend
-    return jsonify(analysis_json)
-    
+    pdf_bytes = pitch_deck.read()
 
+    # Start the background task and get the task object
+    task = analyze_startup_task.delay(pdf_bytes, website_url, SYSTEM_PROMPT)
+
+    # Return the task's ID to the frontend
+    return jsonify({'task_id': task.id})
+
+@app.route('/status/<task_id>')
+def task_status(task_id):
+    # """This route is polled by the frontend to check the task's status."""
+    # task = analyze_startup_task.AsyncResult(task_id)
+    
+    # if task.state == 'PENDING':
+    #     response = {'state': task.state, 'status': 'Pending...'}
+    # elif task.state != 'FAILURE':
+    #     response = {
+    #         'state': task.state,
+    #         'status': task.info.get('status', '') if isinstance(task.info, dict) else str(task.info),
+    #     }
+    #     if 'result' in task.info:
+    #         response['result'] = task.info['result']
+    #     # If the task is successful, the result is in task.result
+    #     if task.state == 'SUCCESS':
+    #         response['result'] = task.result
+    # else:
+    #     # Something went wrong in the background task
+    #     response = {
+    #         'state': task.state,
+    #         'status': str(task.info),  # The exception raised
+    #     }
+    # return jsonify(response)
+    """A more robust route to check the task's status."""
+    task = analyze_startup_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {'state': task.state, 'status': 'Pending...'}
+    elif task.state == 'SUCCESS':
+        response = {'state': task.state, 'result': task.result}
+    elif task.state != 'FAILURE':
+        response = {'state': task.state, 'status': 'In progress...'}
+    else: # The task failed
+        response = {'state': task.state, 'status': str(task.info)}
+        
+    return jsonify(response)
+
+    
 
 # --- 3. Main Execution ---
 if __name__ == "__main__":
