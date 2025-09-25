@@ -46,12 +46,13 @@ def analyze():
 
     if not pitch_deck:
         return jsonify({"error": "No pitch deck provided."}), 400
+    # New: Add file extension validation
+    if not pitch_deck.filename.lower().endswith('.pdf'):
+        return jsonify({"error": "Invalid file type. Please upload a PDF."}), 400
 
     pdf_bytes = pitch_deck.read()
-
     # Start the background task and get the task object
     task = analyze_startup_task.delay(pdf_bytes, website_url, SYSTEM_PROMPT)
-
     # Return the task's ID to the frontend
     return jsonify({'task_id': task.id})
 

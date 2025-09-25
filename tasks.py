@@ -18,7 +18,8 @@ load_dotenv()
 
 # --- Celery Configuration ---
 # The connection string points to our Redis server.
-celery_app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+celery_app = Celery('tasks', broker=redis_url, backend=redis_url)
 
 def extract_text_from_pdf(pdf_bytes):
     # Now takes bytes instead of a file object
@@ -85,10 +86,21 @@ def get_startup_analysis(pitch_deck_text, website_text, system_prompt):
         return {"error": f"An unexpected error occurred. Details: {str(e)}"}
 
 # --- The Celery Task ---
-@celery_app.task
-def analyze_startup_task(pdf_bytes, website_url, system_prompt):
+@celery_app.task(bind=True)
+def analyze_startup_task(self, pdf_bytes, website_url, system_prompt):
     """This is the function that will run in the background."""
-    deck_text = extract_text_from_pdf(pdf_bytes)
-    web_text = scrape_text_from_url(website_url) if website_url else "No website provided."
-    analysis_json = get_startup_analysis(deck_text, web_text, system_prompt)
-    return analysis_json
+    try:
+        deck_text = extract_text_from_pdf(pdf_bytes)
+        web_text = scrape_text_from_url(website_url) if website_url else "No website provided."
+        analysis_json = get_startup_analysis(deck_text, web_text, system_prompt)
+
+        # If the AI returns an error, raise an exception to trigger FAILURE state
+        if 'error' in analysis_json:
+            raise Exception(analysis_json['error'])
+        
+        return analysis_json
+    except Exception as e:
+        # This will catch errors from PDF parsing, web scraping, or the AI
+        # and cause the Celery task to enter a 'FAILURE' state.
+        self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
+        raise e
