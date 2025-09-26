@@ -20,12 +20,25 @@ load_dotenv()
 # --- Celery Configuration ---
 # The connection string points to our Redis server.
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-celery_app = Celery('tasks', broker=redis_url, backend=redis_url)
+# Define SSL options if we are connecting to a secure 'rediss://' URL
 if redis_url.startswith('rediss://'):
-    celery_app.conf.update(
+    celery_app = Celery(
+        'tasks',
+        broker_url=redis_url,
+        result_backend=redis_url,
+        broker_connection_retry_on_startup=True,
         broker_use_ssl={'ssl_cert_reqs': ssl.CERT_NONE},
         redis_backend_use_ssl={'ssl_cert_reqs': ssl.CERT_NONE}
     )
+else:
+    # Standard configuration for a local, non-secure Redis instance
+    celery_app = Celery(
+        'tasks',
+        broker_url=redis_url,
+        result_backend=redis_url,
+        broker_connection_retry_on_startup=True
+    )
+
 
 def extract_text_from_pdf(pdf_bytes):
     # Now takes bytes instead of a file object
