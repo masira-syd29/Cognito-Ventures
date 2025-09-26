@@ -7,6 +7,7 @@ import google.generativeai as genai
 import json
 from celery import Celery
 import io
+import ssl
 
 # Import load_dotenv to correctly load environment variables in the Celery worker process
 from dotenv import load_dotenv
@@ -20,6 +21,11 @@ load_dotenv()
 # The connection string points to our Redis server.
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 celery_app = Celery('tasks', broker=redis_url, backend=redis_url)
+if redis_url.startswith('rediss://'):
+    celery_app.conf.update(
+        broker_use_ssl={'ssl_cert_reqs': ssl.CERT_NONE},
+        redis_backend_use_ssl={'ssl_cert_reqs': ssl.CERT_NONE}
+    )
 
 def extract_text_from_pdf(pdf_bytes):
     # Now takes bytes instead of a file object
