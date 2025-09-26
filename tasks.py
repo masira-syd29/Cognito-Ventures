@@ -60,6 +60,8 @@ def scrape_text_from_url(url):
 
 def get_startup_analysis(pitch_deck_text, website_text, system_prompt):
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+    for m in genai.list_models():
+        print(m.name)
 
     # New: Configure lower safety settings for this specific request
     # This makes the model less likely to block a response.
@@ -70,7 +72,7 @@ def get_startup_analysis(pitch_deck_text, website_text, system_prompt):
         'DANGEROUS': 'BLOCK_NONE'
     }
 
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
     prompt = system_prompt.format(pitch_deck_text=pitch_deck_text, website_text=website_text)
     
     try:
