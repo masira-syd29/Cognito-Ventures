@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 from tasks import analyze_startup_task # Import the task
+import uuid 
 
 
 # # Import the functions from your separate analyst.py file
@@ -10,6 +11,11 @@ from tasks import analyze_startup_task # Import the task
 load_dotenv() # Create a .env file and put GOOGLE_API_KEY="your_key_here"
 # api_key = os.getenv('GOOGLE_API_KEY')
 app = Flask(__name__)
+
+# --- Create a temporary folder for uploads ---
+UPLOAD_FOLDER = 'temp_uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 SYSTEM_PROMPT = """
 You are "VentureGPT", an expert AI analyst for a top-tier venture capital firm.
@@ -50,10 +56,16 @@ def analyze():
     if not pitch_deck.filename.lower().endswith('.pdf'):
         return jsonify({"error": "Invalid file type. Please upload a PDF."}), 400
 
-    pdf_bytes = pitch_deck.read()
-    # Start the background task and get the task object
-    task = analyze_startup_task.delay(pdf_bytes, website_url, SYSTEM_PROMPT)
-    # Return the task's ID to the frontend
+    # --- New Logic: Save file and pass path ---
+    # Generate a unique filename to avoid conflicts
+    unique_filename = str(uuid.uuid4()) + '.pdf'
+    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+    
+    # Save the uploaded file to the temporary location
+    pitch_deck.save(file_path)
+
+    # Pass the FILE PATH to the task, not the file's content
+    task = analyze_startup_task.delay(file_path, website_url, SYSTEM_PROMPT)
     return jsonify({'task_id': task.id})
 
 @app.route('/status/<task_id>')
