@@ -40,9 +40,9 @@ else:
     )
 
 
-def extract_text_from_pdf(pdf_path):
+def extract_text_from_pdf(pdf_bytes):
     # Now takes bytes instead of a file object
-    doc = fitz.open(pdf_path)
+    doc = fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf")
     text = ""
     for page in doc:
         text += page.get_text()
@@ -108,15 +108,10 @@ def get_startup_analysis(pitch_deck_text, website_text, system_prompt):
 
 # --- The Celery Task ---
 @celery_app.task(bind=True)
-def analyze_startup_task(self, pdf_path, website_url, system_prompt):
+def analyze_startup_task(self, deck_text, website_url, system_prompt):
     """This is the function that will run in the background."""
     """This background task now receives a file path"""
     try:
-        if not os.path.exists(pdf_path):
-            raise FileNotFoundError(f'Temporary file not found at path: {pdf_path}')
-
-
-        deck_text = extract_text_from_pdf(pdf_path)
         web_text = scrape_text_from_url(website_url) if website_url else "No website provided."
         analysis_json = get_startup_analysis(deck_text, web_text, system_prompt)
 
@@ -130,8 +125,3 @@ def analyze_startup_task(self, pdf_path, website_url, system_prompt):
         # and cause the Celery task to enter a 'FAILURE' state.
         self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
         raise e
-    finally:
-        # --- New Logic: Clean up the temporary file ---
-        # This 'finally' block ensures the file is deleted even if an error occurs.
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
