@@ -5,19 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Startup Analyst</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { padding: 2rem; }
-        .hidden { display: none; }
-        .card { margin-top: 1.5rem; }
-        .card-header { font-weight: bold; font-size: 1.2rem; }
-        .card-body ul { margin-bottom: 0; }
+        /* --- Style Overrides and Customizations --- */
+
+        /* 4. Apply new font and font color */
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #E0E0E0; /* A slightly off-white for better readability */
+            padding: 2rem;
+        }
+
+        /* 1. Center-align the header content */
+        header {
+            text-align: center;
+            padding-bottom: 2rem;
+        }
+
+        /* 3. Dark and impressive background */
+        /* This is handled by Pico's dark theme, but we can override it if needed */
+        [data-theme="dark"] {
+            --background-color: #111827; /* A deep, modern blue-gray */
+        }
+        
+        /* Minor tweaks for better visual appeal */
+        .card {
+            margin-top: 1.5rem;
+            background-color: #1F2937; /* A slightly lighter card color */
+            border: 1px solid #374151;
+        }
+
+        .card-header {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #FFFFFF;
+        }
+
+        .card-body ul {
+            margin-bottom: 0;
+        }
+
+        /* Helper class for hiding elements */
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <main class="container">
         <!-- ... (your header and form are the same) ... -->
         <header>
-            <h1>🤖 AI Startup Analyst</h1>
+            <h1>🤖 Cognito Ventures - AI Analyst for Startup Evaluation 📈</h1>
             <p>Upload a pitch deck and website to get an instant investment memo.</p>
         </header>
 
