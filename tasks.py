@@ -72,7 +72,9 @@ def get_startup_analysis(pitch_deck_text, website_text, system_prompt):
         'DANGEROUS': 'BLOCK_NONE'
     }
 
-    model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
+    # model = genai.GenerativeModel('gemini-1.5-flash')  #gemini-2.5-flash-preview-05-20
+    # The most reliable way to avoid this error forever:
+    model = genai.GenerativeModel('gemini-flash-latest')
     prompt = system_prompt.format(pitch_deck_text=pitch_deck_text, website_text=website_text)
     
     try:
