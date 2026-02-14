@@ -1,0 +1,12 @@
+name: Upstash Keep Alive
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Runs every Sunday at midnight
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Redis Ping
+        run: |
+          pip install redis
+          python -c "import redis; r = redis.from_url('${{ secrets.REDIS_URL }}', ssl_cert_reqs=None); r.set('ping', 'stay_alive'); print('Heartbeat sent!')"
